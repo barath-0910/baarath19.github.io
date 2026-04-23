@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Baarath — CS Developer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --bg1:#111111;
+  --bg2:#161616;
+  --bg3:#1e1e1e;
+  --line:rgba(255,255,255,0.07);
+  --text:#f0ede8;
+  --muted:#6b6b6b;
+  --soft:#999;
+  --lime:#c8f135;
+  --lime-dim:rgba(200,241,53,0.08);
+  --lime-border:rgba(200,241,53,0.2);
+  --white:#ffffff;
+  --r:16px;
+  --r-lg:24px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;cursor:none}
+
+/* ─── CURSOR ─── */
+#cur{position:fixed;top:0;left:0;width:10px;height:10px;border-radius:50%;background:var(--lime);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .15s,height .15s}
+#cur-o{position:fixed;top:0;left:0;width:32px;height:32px;border-radius:50%;border:1px solid rgba(200,241,53,.4);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s}
+
+/* ─── NAV ─── */
+nav{position:fixed;top:0;inset-x:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:1.25rem 5vw;border-bottom:1px solid var(--line);background:rgba(10,10,10,.8);backdrop-filter:blur(20px)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;color:var(--text);text-decoration:none}
+.logo span{color:var(--lime)}
+.nav-r{display:flex;align-items:center;gap:2rem}
+.nav-r a{font-size:.8rem;font-weight:500;color:var(--muted);text-decoration:none;letter-spacing:.06em;text-transform:uppercase;transition:color .2s}
+.nav-r a:hover{color:var(--lime)}
+.nav-avail{display:flex;align-items:center;gap:7px;font-size:.75rem;font-weight:600;color:var(--lime);letter-spacing:.08em;text-transform:uppercase;padding:.35rem .9rem;border:1px solid var(--lime-border);border-radius:100px;background:var(--lime-dim)}
+.nav-avail::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--lime);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─── HERO ─── */
+.hero{min-height:100vh;display:grid;grid-template-rows:1fr auto;padding:0 5vw;padding-top:80px;position:relative;overflow:hidden}
+.hero-inner{display:flex;flex-direction:column;justify-content:center;padding:4rem 0 2rem;position:relative;z-index:2}
+
+/* Grid lines bg */
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 30%,black,transparent);
+  pointer-events:none;
+}
+
+.hero-number{
+  font-family:'Bebas Neue',sans-serif;
+  position:absolute;right:-2vw;top:50%;transform:translateY(-50%);
+  font-size:clamp(200px,28vw,420px);
+  color:rgba(255,255,255,0.025);
+  line-height:1;letter-spacing:-10px;
+  pointer-events:none;user-select:none;
+  z-index:1;
+}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:1.5rem;
+  opacity:0;animation:up .5s .1s ease forwards;
+}
+.eyebrow-line{width:32px;height:1px;background:var(--muted)}
+
+h1.hname{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(5rem,14vw,13rem);
+  line-height:.9;letter-spacing:2px;
+  color:var(--text);
+  opacity:0;animation:up .6s .2s ease forwards;
+}
+h1.hname .outline{
+  -webkit-text-stroke:1.5px var(--text);
+  color:transparent;display:block;
+}
+h1.hname .filled{display:block;}
+
+.hero-desc{
+  max-width:460px;font-size:.97rem;color:var(--soft);line-height:1.8;
+  margin-top:2rem;
+  opacity:0;animation:up .6s .35s ease forwards;
+}
+
+.hero-btns{
+  display:flex;gap:1rem;margin-top:2.5rem;flex-wrap:wrap;
+  opacity:0;animation:up .6s .45s ease forwards;
+}
+.btn-lime{background:var(--lime);color:#0a0a0a;border:none;padding:.8rem 2rem;border-radius:100px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .2s,background .2s}
+.btn-lime:hover{background:#d4ff44;transform:translateY(-2px)}
+.btn-str{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.15);padding:.8rem 2rem;border-radius:100px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .2s,transform .2s}
+.btn-str:hover{border-color:rgba(255,255,255,.4);transform:translateY(-2px)}
+
+/* hero bottom row */
+.hero-bottom{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding-bottom:2.5rem;position:relative;z-index:2;flex-wrap:wrap;gap:1rem;
+  opacity:0;animation:up .6s .6s ease forwards;
+}
+.hero-stat{text-align:center}
+.hero-stat .n{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;color:var(--lime);line-height:1}
+.hero-stat .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
+.hero-scroll{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.scroll-bar{width:1px;height:48px;background:linear-gradient(var(--muted),transparent);animation:grow 2s ease-in-out infinite}
+@keyframes grow{0%,100%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}}
+
+/* ─── TICKER ─── */
+.ticker{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:.9rem 0;background:var(--bg1)}
+.ticker-track{display:inline-flex;white-space:nowrap;animation:tick 20s linear infinite}
+.ticker-item{display:inline-flex;align-items:center;gap:1.2rem;padding:0 1.5rem;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.ticker-item .sep{color:var(--lime);font-size:1rem}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ─── SECTIONS COMMON ─── */
+section{padding:7rem 5vw}
+.s-tag{font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--lime);margin-bottom:.75rem}
+.s-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.5rem,5vw,4.5rem);letter-spacing:1px;line-height:1;margin-bottom:1.25rem}
+.s-sub{font-size:.95rem;color:var(--soft);line-height:1.8;max-width:480px}
+
+/* ─── ABOUT ─── */
+.about-wrap{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start;margin-top:4rem}
+.about-left{}
+.about-card{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:2.5rem;position:relative;overflow:hidden;
+}
+.about-card::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:var(--lime-dim);filter:blur(40px)}
+.about-card p{font-size:.93rem;color:var(--soft);line-height:1.85}
+.about-card p+p{margin-top:1rem}
+.about-card strong{color:var(--text);font-weight:600}
+.about-card em{color:var(--lime);font-style:normal;font-weight:600}
+
+.about-right{display:flex;flex-direction:column;gap:1.25rem}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.stat-box{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:1.5rem;transition:border-color .2s}
+.stat-box:hover{border-color:var(--lime-border)}
+.stat-box .n{font-family:'Bebas Neue',sans-serif;font-size:3rem;color:var(--lime);line-height:1}
+.stat-box .l{font-size:.75rem;color:var(--muted);font-weight:500;margin-top:.25rem}
+
+.skill-grid{display:flex;flex-wrap:wrap;gap:.6rem}
+.sk{
+  font-size:.78rem;font-weight:600;letter-spacing:.04em;
+  padding:6px 14px;border-radius:100px;
+  border:1px solid var(--line);color:var(--soft);
+  background:var(--bg2);transition:all .2s;cursor:default;
+}
+.sk:hover{background:var(--lime);color:#0a0a0a;border-color:var(--lime)}
+
+.quote-box{
+  background:var(--lime-dim);border:1px solid var(--lime-border);
+  border-radius:var(--r);padding:1.5rem 1.75rem;
+  font-size:.9rem;font-style:italic;color:var(--text);line-height:1.7;
+}
+.quote-box::before{content:'"';font-family:'Bebas Neue',sans-serif;font-size:3rem;color:var(--lime);line-height:.5;display:block;margin-bottom:.5rem}
+
+/* ─── WORK ─── */
+.work{background:var(--bg1)}
+.work-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:3rem;flex-wrap:wrap;gap:1rem}
+.work-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem}
+
+.wcard{
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);
+  overflow:hidden;transition:transform .3s ease,border-color .3s;
+  display:flex;flex-direction:column;
+}
+.wcard:hover{transform:translateY(-5px);border-color:rgba(200,241,53,.2)}
+.wcard.big{grid-column:span 8}
+.wcard.sm{grid-column:span 4}
+.wcard.half{grid-column:span 6}
+.wcard.third{grid-column:span 4}
+
+.wcard-thumb{
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-size:3.5rem;height:200px;flex-shrink:0;
+}
+.wcard.big .wcard-thumb{height:260px}
+.t-java{background:linear-gradient(135deg,#1a1500,#2e2600)}
+.t-sql{background:linear-gradient(135deg,#001a0e,#002e1a)}
+.t-web{background:linear-gradient(135deg,#001220,#001e36)}
+.t-algo{background:linear-gradient(135deg,#15001a,#22002e)}
+.t-bank{background:linear-gradient(135deg,#1a0000,#2e0e00)}
+.t-data{background:linear-gradient(135deg,#001a1a,#002e2e)}
+
+.wcard-thumb .corner-tag{
+  position:absolute;top:12px;right:12px;
+  font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:100px;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);
+  border:1px solid rgba(255,255,255,.08);
+}
+.wcard-body{padding:1.5rem;flex:1;display:flex;flex-direction:column}
+.wcard-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.75rem}
+.wtag{font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:100px;background:var(--bg3);color:var(--muted);border:1px solid var(--line)}
+.wcard-title{font-size:1rem;font-weight:700;margin-bottom:.4rem;color:var(--text)}
+.wcard-desc{font-size:.82rem;color:var(--muted);line-height:1.65;flex:1}
+.wcard-foot{padding:0 1.5rem 1.5rem;display:flex;justify-content:space-between;align-items:center}
+.wlink{font-size:.8rem;font-weight:700;color:var(--lime);text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:gap .2s}
+.wlink:hover{gap:9px}
+.widx{font-size:.72rem;color:var(--muted);font-weight:500;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1px}
+
+/* ─── CONTACT ─── */
+.contact-wrap{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+.c-big-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,7vw,6rem);line-height:.95;letter-spacing:2px;margin-bottom:1.5rem}
+.c-big-text span{color:var(--lime);display:block}
+.c-sub{font-size:.95rem;color:var(--soft);line-height:1.8;margin-bottom:2.5rem}
+.c-links{display:flex;flex-direction:column;gap:.75rem}
+.c-link{
+  display:flex;align-items:center;gap:14px;
+  padding:.9rem 1.2rem;border-radius:var(--r);
+  background:var(--bg2);border:1px solid var(--line);
+  text-decoration:none;color:var(--text);
+  transition:border-color .2s,transform .2s;
+}
+.c-link:hover{border-color:var(--lime-border);transform:translateX(5px)}
+.c-link-icon{width:38px;height:38px;border-radius:10px;background:var(--bg3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:background .2s,border-color .2s}
+.c-link:hover .c-link-icon{background:var(--lime-dim);border-color:var(--lime-border)}
+.c-link-info{flex:1}
+.c-link-lbl{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.c-link-val{font-size:.9rem;font-weight:600;color:transparent;letter-spacing:.02em;transition:color .25s,letter-spacing .25s;user-select:none}
+.c-link:hover .c-link-val{color:var(--text);letter-spacing:.04em}
+.c-link-arr{color:transparent;font-size:.9rem;transition:color .2s,transform .2s}
+.c-link:hover .c-link-arr{color:var(--lime);transform:translateX(4px)}
+
+/* Form */
+.cform{display:flex;flex-direction:column;gap:1rem}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fg input,.fg textarea{
+  background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  padding:.8rem 1rem;color:var(--text);font-family:'Outfit',sans-serif;font-size:.92rem;
+  outline:none;transition:border-color .2s;
+}
+.fg input:focus,.fg textarea:focus{border-color:var(--lime-border)}
+.fg textarea{min-height:110px;resize:vertical}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.btn-submit{background:var(--lime);color:#0a0a0a;border:none;padding:.95rem;border-radius:100px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;width:100%;transition:background .2s,transform .2s;letter-spacing:.04em;margin-top:.25rem}
+.btn-submit:hover{background:#d4ff44;transform:translateY(-2px)}
+
+/* ─── FOOTER ─── */
+footer{
+  background:var(--bg1);border-top:1px solid var(--line);
+  padding:1.5rem 5vw;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;
+  font-size:.78rem;color:var(--muted);
+}
+footer a{color:var(--muted);text-decoration:none;transition:color .2s}
+footer a:hover{color:var(--lime)}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--soft)}
+.footer-logo span{color:var(--lime)}
+
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+@media(max-width:900px){
+  .about-wrap,.contact-wrap{grid-template-columns:1fr;gap:2.5rem}
+  .wcard.big,.wcard.sm,.wcard.half,.wcard.third{grid-column:span 12}
+  .nav-r a{display:none}
+  .fg-row{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-o"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">Baarath</a>
+  <div class="nav-r">
+    <a href="#about">About</a>
+    <a href="#work">Work</a>
+    <a href="#contact">Contact</a>
+    <!-- <div class="nav-avail">Available</div> -->
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-number">B</div>
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="eyebrow-line"></span> CS Student & Developer</div>
+    <h1 class="hname">
+      <span class="filled">Baarath</span>
+      <span class="outline">Builds</span>
+    </h1>
+    <p class="hero-desc">Passionate about the logic that makes software reliable. Java, SQL, and the web — clean code, structured data, purposeful applications.</p>
+    <div class="hero-btns">
+      <a href="#work" class="btn-lime">See my work ↓</a>
+      <a href="#contact" class="btn-str">Let's connect</a>
+    </div>
+  </div>
+  <div class="hero-bottom">
+    <div style="display:flex;gap:3rem">
+      <div class="hero-stat"><div class="n">2+</div><div class="l">Years CS</div></div>
+      <div class="hero-stat"><div class="n">6+</div><div class="l">Projects</div></div>
+      <div class="hero-stat"><div class="n">3</div><div class="l">Core Skills</div></div>
+    </div>
+    <div class="hero-scroll"><div class="scroll-bar"></div>Scroll</div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item">Java OOP <span class="sep">✦</span></span>
+    <span class="ticker-item">SQL & Databases <span class="sep">✦</span></span>
+    <span class="ticker-item">HTML & CSS <span class="sep">✦</span></span>
+    <span class="ticker-item">ASP.NET ASPX <span class="sep">✦</span></span>
+    <span class="ticker-item">Data Structures <span class="sep">✦</span></span>
+    <span class="ticker-item">Algorithms <span class="sep">✦</span></span>
+    <span class="ticker-item">Object-Oriented Design <span class="sep">✦</span></span>
+    <span class="ticker-item">Relational Data <span class="sep">✦</span></span>
+    <span class="ticker-item">Java OOP <span class="sep">✦</span></span>
+    <span class="ticker-item">SQL & Databases <span class="sep">✦</span></span>
+    <span class="ticker-item">HTML & CSS <span class="sep">✦</span></span>
+    <span class="ticker-item">ASP.NET ASPX <span class="sep">✦</span></span>
+    <span class="ticker-item">Data Structures <span class="sep">✦</span></span>
+    <span class="ticker-item">Algorithms <span class="sep">✦</span></span>
+    <span class="ticker-item">Object-Oriented Design <span class="sep">✦</span></span>
+    <span class="ticker-item">Relational Data <span class="sep">✦</span></span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="s-tag">— Who I am</div>
+  <h2 class="s-title">Building with purpose.</h2>
+  <div class="about-wrap">
+    <div class="about-left reveal">
+      <div class="about-card">
+        <p>I'm a <strong>Computer Science student</strong> wrapping up my second year. I've shifted from learning fundamentals to <em>building functional, real-world applications</em> — and I haven't looked back.</p>
+        <p>I'm passionate about the <strong>"behind-the-scenes" logic</strong> that makes software reliable and the data structures that keep it all organised. Clean, reusable, purposeful code — that's what I care about.</p>
+        <p>As I move into my <strong>final year</strong>, I'm actively seeking opportunities to apply my skills to real projects and collaborate with others who love technology as much as I do.</p>
+      </div>
+      <div style="margin-top:1.25rem" class="reveal">
+        <div class="quote-box">Always happy to connect with others passionate about technology and software engineering.</div>
+      </div>
+    </div>
+    <div class="about-right reveal">
+      <div class="stat-row">
+        <div class="stat-box"><div class="n">2+</div><div class="l">Years studying CS</div></div>
+        <div class="stat-box"><div class="n">6+</div><div class="l">Projects built</div></div>
+        <div class="stat-box"><div class="n">3</div><div class="l">Tech domains</div></div>
+        <div class="stat-box"><div class="n">∞</div><div class="l">Curiosity</div></div>
+      </div>
+      <div class="skill-grid" style="margin-top:1.25rem">
+        <span class="sk">☕ Java</span>
+        <span class="sk">🗄 SQL</span>
+        <span class="sk">🌐 HTML & CSS</span>
+        <span class="sk">📄 ASP.NET</span>
+        <span class="sk">🏗 OOP</span>
+        <span class="sk">📊 Data Structures</span>
+        <span class="sk">🔁 Algorithms</span>
+        <span class="sk">🧩 Design Patterns</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="work" id="work">
+  <div class="work-header">
+    <div>
+      <div class="s-tag">— Selected Work</div>
+      <h2 class="s-title">What I've made.</h2>
+    </div>
+    <a href="#contact" class="btn-str">Work together →</a>
+  </div>
+  <div class="work-grid">
+
+    <div class="wcard big reveal">
+      <div class="wcard-thumb t-java">☕<span class="corner-tag">Java · OOP</span></div>
+      <div class="wcard-body">
+        <div class="wcard-tags"><span class="wtag">Java</span><span class="wtag">OOP</span><span class="wtag">Inheritance</span></div>
+        <div class="wcard-title">Library Management System</div>
+        <div class="wcard-desc">A fully object-oriented library system in Java. Designed with clean class hierarchies for Books, Members, and Transactions — applying inheritance, encapsulation, and polymorphism throughout.</div>
+      </div>
+      <div class="wcard-foot"><a href="#" class="wlink">View project →</a><span class="widx">01</span></div>
+    </div>
+
+    <div class="wcard sm reveal">
+      <div class="wcard-thumb t-sql">🗄<span class="corner-tag">SQL</span></div>
+      <div class="wcard-body">
+        <div class="wcard-tags"><span class="wtag">SQL</span><span class="wtag">Relational DB</span></div>
+        <div class="wcard-title">Student Records Database</div>
+        <div class="wcard-desc">Schema design and complex queries for student enrollment, grades, and course management using JOINs, GROUP BY, and window functions.</div>
+      </div>
+      <div class="wcard-foot"><a href="#" class="wlink">View →</a><span class="widx">02</span></div>
+    </div>
+
+    <div class="wcard third reveal">
+      <div class="wcard-thumb t-web" style="height:160px">🌐<span class="corner-tag">Web</span></div>
+      <div class="wcard-body">
+        <div class="wcard-tags"><span class="wtag">HTML</span><span class="wtag">CSS</span><span class="wtag">ASPX</span></div>
+        <div class="wcard-title">Interactive Course Portal</div>
+        <div class="wcard-desc">Web portal built with HTML and ASP.NET for viewing materials and submitting assignments.</div>
+      </div>
+      <div class="wcard-foot"><a href="#" class="wlink">View →</a><span class="widx">03</span></div>
+    </div>
+
+    <div class="wcard third reveal">
+      <div class="wcard-thumb t-algo" style="height:160px">⚙️<span class="corner-tag">Algorithms</span></div>
+      <div class="wcard-body">
+        <div class="wcard-tags"><span class="wtag">Java</span><span class="wtag">Sorting</span></div>
+        <div class="wcard-title">Sorting Visualiser</div>
+        <div class="wcard-desc">Implemented and compared Bubble, Merge, and Quick sort algorithms in Java with step-by-step output.</div>
+      </div>
+      <div class="wcard-foot"><a href="#" class="wlink">View →</a><span class="widx">04</span></div>
+    </div>
+
+    <div class="wcard third reveal">
+      <div class="wcard-thumb t-bank" style="height:160px">🏦<span class="corner-tag">Java · OOP</span></div>
+      <div class="wcard-body">
+        <div class="wcard-tags"><span class="wtag">Java</span><span class="wtag">Patterns</span></div>
+        <div class="wcard-title">Banking Simulation</div>
+        <div class="wcard-desc">Multi-account banking system with polymorphism, interface contracts, deposits, withdrawals, and interest calculations.</div>
+      </div>
+      <div class="wcard-foot"><a href="#" class="wlink">View →</a><span class="widx">05</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="s-tag">— Say hello</div>
+  <div class="contact-wrap">
+    <div class="reveal">
+      <div class="c-big-text">
+        LET'S
+        <span>BUILD</span>
+        TOGETHER.
+      </div>
+      <p class="c-sub">Whether it's an internship opportunity, a collaboration, or just a conversation about tech — I'm always happy to connect.</p>
+      <div class="c-links">
+        <a href="mailto:baarath@email.com" class="c-link">
+          <div class="c-link-icon">📧</div>
+          <div class="c-link-info"><div class="c-link-lbl">Email</div><div class="c-link-val">baarath@email.com</div></div>
+          <div class="c-link-arr">→</div>
+        </a>
+        <a href="#" class="c-link">
+          <div class="c-link-icon">💼</div>
+          <div class="c-link-info"><div class="c-link-lbl">LinkedIn</div><div class="c-link-val">linkedin.com/in/baarath</div></div>
+          <div class="c-link-arr">→</div>
+        </a>
+        <a href="#" class="c-link">
+          <div class="c-link-icon">🐙</div>
+          <div class="c-link-info"><div class="c-link-lbl">GitHub</div><div class="c-link-val">github.com/baarath</div></div>
+          <div class="c-link-arr">→</div>
+        </a>
+      </div>
+    </div>
+    <div class="cform reveal">
+      <div class="fg-row">
+        <div class="fg"><label>Name</label><input type="text" placeholder="Your name"/></div>
+        <div class="fg"><label>Email</label><input type="email" placeholder="your@email.com"/></div>
+      </div>
+      <div class="fg"><label>Subject</label><input type="text" placeholder="Internship / Collaboration / Just saying hi"/></div>
+      <div class="fg"><label>Message</label><textarea placeholder="Tell me what's on your mind..."></textarea></div>
+      <button class="btn-submit">Send Message ✦</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Baarath<span>.</span></div>
+  <span>© 2025 Baarath. All rights reserved.</span>
+  <div style="display:flex;gap:1.5rem">
+    <a href="#about">About</a>
+    <a href="#work">Work</a>
+    <a href="#contact">Contact</a>
+  </div>
+</footer>
+
+<script>
+// Cursor
+const cur=document.getElementById('cur'),oro=document.getElementById('cur-o');
+let mx=0,my=0,ox=0,oy=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function loop(){ox+=(mx-ox)*.1;oy+=(my-oy)*.1;oro.style.left=ox+'px';oro.style.top=oy+'px';requestAnimationFrame(loop)})();
+
+// Scroll reveal
+const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+  const t=document.querySelector(a.getAttribute('href'));
+  if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}
+}));
+</script>
+</body>
+</html>
