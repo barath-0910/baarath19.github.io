@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgeScan.Sys — Neural Age Detector</title>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#00FF41;--green-dim:#00aa2a;--green-dark:#003010;
+  --cyan:#00FFFF;--red:#FF3131;--amber:#FFBF00;
+  --bg:#020c02;--surface:rgba(0,255,65,0.03);--border:rgba(0,255,65,0.18);
+}
+
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--green);
+  font-family:'Share Tech Mono',monospace;
+  cursor:crosshair;
+}
+
+/* Grid background */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,65,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,65,0.04) 1px,transparent 1px);
+  background-size:38px 38px;
+  pointer-events:none;z-index:0;
+}
+/* CRT scanlines */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 2px,
+    rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px
+  );
+  pointer-events:none;z-index:9999;
+}
+
+.app{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  height:100vh;
+  padding:14px 18px;
+  gap:12px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);padding-bottom:10px;
+}
+.logo{
+  font-family:'Orbitron',monospace;font-size:20px;font-weight:900;
+  letter-spacing:0.18em;color:var(--green);
+  text-shadow:0 0 14px var(--green),0 0 30px rgba(0,255,65,0.3);
+}
+.logo span{color:var(--cyan);text-shadow:0 0 14px var(--cyan)}
+.header-right{display:flex;align-items:center;gap:10px}
+.pill{
+  font-size:9px;letter-spacing:0.18em;padding:4px 10px;
+  border:1px solid;border-radius:2px;text-transform:uppercase;
+}
+.pill-live{border-color:var(--green);color:var(--green);animation:blink 1.4s infinite}
+.pill-ver{border-color:var(--cyan);color:var(--cyan)}
+.pill-status{border-color:var(--amber);color:var(--amber)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── MAIN GRID ──────────────────────────────────── */
+.main{
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:12px;
+  overflow:hidden;
+}
+
+/* ── PANEL ──────────────────────────────────────── */
+.panel{
+  border:1px solid var(--border);
+  background:var(--surface);
+  padding:12px;
+  position:relative;
+  backdrop-filter:blur(6px);
+}
+.panel::before{
+  content:'';position:absolute;
+  top:-1px;left:12px;
+  width:50px;height:2px;
+  background:var(--green);
+  box-shadow:0 0 10px var(--green);
+}
+.panel-title{
+  font-size:9px;letter-spacing:0.25em;
+  color:var(--green-dim);margin-bottom:10px;
+  text-transform:uppercase;
+}
+
+/* ── LEFT COLUMN ────────────────────────────────── */
+.left-col{display:flex;flex-direction:column;gap:12px;overflow:hidden}
+
+/* Camera */
+.cam-panel{flex:1;display:flex;flex-direction:column}
+.cam-wrap{
+  position:relative;flex:1;
+  background:#000;
+  overflow:hidden;
+  border:1px solid var(--border);
+  min-height:0;
+}
+#video{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+  transform:scaleX(-1); /* mirror */
+}
+#canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  transform:scaleX(-1);
+}
+
+/* scan sweep */
+.sweep{
+  position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);
+  box-shadow:0 0 14px var(--green);
+  z-index:4;opacity:0;
+  animation:sweep 3s ease-in-out infinite;
+}
+@keyframes sweep{
+  0%{top:0%;opacity:0}
+  5%{opacity:1}
+  95%{opacity:1}
+  100%{top:100%;opacity:0}
+}
+
+/* corners */
+.corner{position:absolute;width:18px;height:18px;z-index:5}
+.c-tl{top:8px;left:8px;border-top:2px solid var(--green);border-left:2px solid var(--green)}
+.c-tr{top:8px;right:8px;border-top:2px solid var(--green);border-right:2px solid var(--green)}
+.c-bl{bottom:8px;left:8px;border-bottom:2px solid var(--green);border-left:2px solid var(--green)}
+.c-br{bottom:8px;right:8px;border-bottom:2px solid var(--green);border-right:2px solid var(--green)}
+
+/* offline state */
+.cam-offline{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  z-index:6;background:#000;
+}
+.cam-offline-icon{font-size:42px;opacity:.3}
+.cam-offline-text{font-size:11px;color:var(--green-dim);letter-spacing:0.2em}
+.cam-offline-sub{font-size:9px;color:#1a3a1a;letter-spacing:0.15em}
+
+/* loading state */
+.cam-loading{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  z-index:6;background:rgba(0,0,0,0.85);
+}
+.loader{
+  width:40px;height:40px;
+  border:2px solid var(--green-dark);
+  border-top:2px solid var(--green);
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* buttons */
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn{
+  flex:1;padding:10px;
+  border:1px solid var(--green);background:none;
+  color:var(--green);font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:0.2em;
+  cursor:pointer;text-transform:uppercase;
+  transition:all .2s;
+}
+.btn:hover{background:rgba(0,255,65,0.1);box-shadow:0 0 14px rgba(0,255,65,0.25)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:rgba(255,49,49,0.08)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* Log */
+.log-panel{max-height:110px}
+.log-box{
+  font-size:9px;line-height:1.8;
+  color:var(--green-dim);
+  max-height:80px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--green-dark) transparent;
+}
+.log-line{display:flex;gap:8px}
+.log-ts{color:#1f4a1f;flex-shrink:0}
+.log-green{color:var(--green)}
+.log-cyan{color:var(--cyan)}
+.log-amber{color:var(--amber)}
+.log-red{color:var(--red)}
+
+/* ── RIGHT COLUMN ───────────────────────────────── */
+.right-col{display:flex;flex-direction:column;gap:12px;overflow-y:auto;scrollbar-width:none}
+
+/* Age output */
+.age-out{text-align:center;padding:14px 8px 10px}
+.age-lbl{font-size:8px;letter-spacing:0.3em;color:var(--green-dim);margin-bottom:6px}
+.age-num{
+  font-family:'Orbitron',monospace;font-size:52px;font-weight:900;
+  color:var(--cyan);
+  text-shadow:0 0 20px var(--cyan),0 0 50px rgba(0,255,255,0.25);
+  line-height:1;transition:all .4s;
+}
+.age-yrs{font-size:10px;color:var(--green-dim);letter-spacing:0.25em;margin-top:4px}
+.age-range{font-size:10px;color:var(--amber);margin-top:6px;letter-spacing:0.08em}
+.conf-wrap{margin-top:10px}
+.conf-head{
+  display:flex;justify-content:space-between;
+  font-size:9px;color:var(--green-dim);
+  letter-spacing:0.15em;margin-bottom:4px;
+}
+.conf-bar{
+  height:4px;background:rgba(0,255,65,0.08);
+  border:1px solid var(--border);overflow:hidden;
+}
+.conf-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--green-dark),var(--green));
+  box-shadow:0 0 10px var(--green);
+  transition:width .5s ease;
+}
+
+/* Metrics */
+.metric{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;border-bottom:1px solid rgba(0,255,65,0.07);
+}
+.metric:last-child{border:none}
+.mk{font-size:8px;color:var(--green-dim);letter-spacing:0.14em}
+.mv{font-size:10px;letter-spacing:0.1em}
+.mv-g{color:var(--green)}
+.mv-c{color:var(--cyan)}
+.mv-a{color:var(--amber)}
+
+/* Class bars */
+.cbar-wrap{margin-bottom:6px}
+.cbar-head{
+  display:flex;justify-content:space-between;
+  font-size:8px;color:var(--green-dim);
+  letter-spacing:0.1em;margin-bottom:2px;
+}
+.cbar-track{height:3px;background:rgba(0,255,65,0.07);border:1px solid var(--border)}
+.cbar-fill{height:100%;width:0%;transition:width .5s ease;box-shadow:0 0 5px}
+
+/* ── FOOTER ─────────────────────────────────────── */
+footer{
+  display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border);padding-top:8px;
+}
+.footer-txt{font-size:8px;color:#1a3a1a;letter-spacing:0.2em}
+.blink-cur{
+  display:inline-block;width:8px;height:12px;
+  background:var(--green);vertical-align:middle;
+  animation:blink .7s infinite;margin-left:4px;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">AGE<span>SCAN</span>.SYS</div>
+    <div class="header-right">
+      <span class="pill pill-live" id="pill-live">● LIVE</span>
+      <span class="pill pill-ver">SYS v3.1</span>
+      <span class="pill pill-status" id="pill-status">STANDBY</span>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT -->
+    <div class="left-col">
+
+      <!-- Camera -->
+      <div class="panel cam-panel">
+        <div class="panel-title">// camera_feed [ face_detection_stream ]</div>
+        <div class="cam-wrap" id="cam-wrap">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="canvas"></canvas>
+          <div class="sweep" id="sweep"></div>
+          <div class="corner c-tl"></div><div class="corner c-tr"></div>
+          <div class="corner c-bl"></div><div class="corner c-br"></div>
+
+          <!-- Offline -->
+          <div class="cam-offline" id="cam-offline">
+            <div class="cam-offline-icon">▣</div>
+            <div class="cam-offline-text">[ CAMERA OFFLINE ]</div>
+            <div class="cam-offline-sub">CLICK ACTIVATE TO INITIALIZE STREAM</div>
+          </div>
+
+          <!-- Loading models -->
+          <div class="cam-loading" id="cam-loading">
+            <div class="loader"></div>
+            <div class="cam-offline-text">LOADING NEURAL MODELS...</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="btn-start" onclick="startCam()">▶ ACTIVATE</button>
+          <button class="btn danger" id="btn-stop" onclick="stopCam()" style="display:none">■ STOP</button>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="panel log-panel">
+        <div class="panel-title">// system_log [ terminal_output ]</div>
+        <div class="log-box" id="log-box">
+          <div class="log-line"><span class="log-ts">00:00:00</span><span class="log-cyan">AgeScan.Sys initialized — Neural Vision Engine v3.1</span></div>
+          <div class="log-line"><span class="log-ts">00:00:00</span><span class="log-green">Click ACTIVATE to start camera and load models</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-col">
+
+      <!-- Age output -->
+      <div class="panel">
+        <div class="panel-title">// age_output</div>
+        <div class="age-out">
+          <div class="age-lbl">DETECTED AGE</div>
+          <div class="age-num" id="age-num">--</div>
+          <div class="age-yrs">YEARS OLD</div>
+          <div class="age-range" id="age-range">RANGE: ??–??</div>
+        </div>
+        <div class="conf-wrap">
+          <div class="conf-head"><span>CONFIDENCE</span><span id="conf-pct">0%</span></div>
+          <div class="conf-bar"><div class="conf-fill" id="conf-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- Biometrics -->
+      <div class="panel">
+        <div class="panel-title">// biometrics</div>
+        <div class="metric"><span class="mk">FACE</span><span class="mv mv-g" id="m-face">NONE</span></div>
+        <div class="metric"><span class="mk">GENDER EST.</span><span class="mv mv-a" id="m-gender">--</span></div>
+        <div class="metric"><span class="mk">EXPRESSION</span><span class="mv mv-c" id="m-expr">--</span></div>
+        <div class="metric"><span class="mk">SCAN #</span><span class="mv mv-g" id="m-scans">0</span></div>
+        <div class="metric"><span class="mk">FPS</span><span class="mv mv-g" id="m-fps">--</span></div>
+      </div>
+
+      <!-- Age class -->
+      <div class="panel">
+        <div class="panel-title">// age_distribution</div>
+        <div id="class-bars"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span class="footer-txt">AGESCAN.SYS © 2026 — POWERED BY FACE-API.JS + NEURAL NETWORKS</span>
+    <span class="footer-txt" id="footer-status">STATUS: STANDBY<span class="blink-cur"></span></span>
+  </footer>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  AgeScan.Sys — Real age detection via face-api.js
+//  Models load from jsdelivr CDN (no backend needed)
+// ─────────────────────────────────────────────────────────
+
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+
+const video   = document.getElementById('video');
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+
+let stream       = null;
+let detecting    = false;
+let scanCount    = 0;
+let lastTime     = performance.now();
+let fps          = 0;
+let frameNum     = 0;
+let modelsLoaded = false;
+
+// ── Smoothing buffers ─────────────────────────────────
+const BUFFER_SIZE  = 15;   // rolling window of 15 readings
+const LOCK_THRESH  = 3;    // lock display if std dev < 3 years
+let ageBuffer      = [];   // last N raw age readings
+let genderBuffer   = [];   // last N gender readings
+let exprBuffer     = [];   // last N expression readings
+let lockedAge      = null; // currently displayed stable age
+let stableCount    = 0;    // how many frames have been stable
+
+function bufferPush(arr, val, max){
+  arr.push(val);
+  if(arr.length > max) arr.shift();
+}
+
+function bufferMean(arr){
+  return arr.reduce((a,b)=>a+b,0) / arr.length;
+}
+
+function bufferStdDev(arr){
+  const mean = bufferMean(arr);
+  const sq   = arr.map(v=>(v-mean)**2);
+  return Math.sqrt(sq.reduce((a,b)=>a+b,0)/arr.length);
+}
+
+function bufferMode(arr){
+  const freq = {};
+  arr.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+// ── Logging ───────────────────────────────────────────
+function log(msg, type='green'){
+  const box = document.getElementById('log-box');
+  const now = new Date();
+  const ts  = [now.getHours(),now.getMinutes(),now.getSeconds()]
+    .map(x=>String(x).padStart(2,'0')).join(':');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-ts">${ts}</span><span class="log-${type}">${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+  if(box.children.length > 40) box.removeChild(box.firstChild);
+}
+
+// ── Status ────────────────────────────────────────────
+function setStatus(txt){
+  document.getElementById('pill-status').textContent = txt;
+  document.getElementById('footer-status').innerHTML =
+    `STATUS: ${txt}<span class="blink-cur"></span>`;
+}
+
+// ── Class bars (static structure) ─────────────────────
+const ageClasses = ['0–12','13–17','18–25','26–35','36–50','51–65','65+'];
+const classCenters = [6,15,22,30,43,58,72];
+const classColors  = ['#00FFFF','#00FF41','#00FF41','#00FF41','#FFBF00','#FFBF00','#FF3131'];
+
+function initClassBars(){
+  const wrap = document.getElementById('class-bars');
+  wrap.innerHTML = ageClasses.map((c,i)=>`
+    <div class="cbar-wrap">
+      <div class="cbar-head"><span>${c}</span><span id="cb-pct-${i}">0%</span></div>
+      <div class="cbar-track">
+        <div class="cbar-fill" id="cb-fill-${i}"
+          style="background:${classColors[i]};box-shadow:0 0 5px ${classColors[i]}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateClassBars(age){
+  const weights = classCenters.map(c => Math.max(0, 100 - Math.abs(age - c) * 7));
+  const sum = weights.reduce((a,b)=>a+b,0)||1;
+  weights.forEach((w,i)=>{
+    const pct = Math.round(w/sum*100);
+    document.getElementById(`cb-fill-${i}`).style.width = pct+'%';
+    document.getElementById(`cb-pct-${i}`).textContent  = pct+'%';
+  });
+}
+
+// ── Load models ───────────────────────────────────────
+async function loadModels(){
+  log('Loading TinyFaceDetector model...','cyan');
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  log('Loading AgeGender model...','cyan');
+  await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
+  log('Loading FaceExpression model...','cyan');
+  await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+  log('All models loaded ✓','cyan');
+  modelsLoaded = true;
+}
+
+// ── Start camera ──────────────────────────────────────
+async function startCam(){
+  document.getElementById('btn-start').disabled = true;
+  setStatus('LOADING');
+
+  // Show loading overlay
+  document.getElementById('cam-loading').style.display = 'flex';
+  document.getElementById('cam-offline').style.display = 'none';
+
+  // Load models first
+  if(!modelsLoaded){
+    try{
+      await loadModels();
+    }catch(e){
+      log('Model load failed: '+e.message,'red');
+      log('Check internet connection','amber');
+      document.getElementById('cam-loading').style.display = 'none';
+      document.getElementById('cam-offline').style.display = 'flex';
+      document.getElementById('btn-start').disabled = false;
+      setStatus('ERROR');
+      return;
+    }
+  }
+
+  // Get camera
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'user', width:{ideal:640}, height:{ideal:480}},
+      audio:false
+    });
+    video.srcObject = stream;
+    await video.play();
+    log('Camera stream initialized','green');
+    log('Face detection loop started','green');
+  }catch(e){
+    log('Camera error: '+e.message,'red');
+    log('Please allow camera access and reload','amber');
+    document.getElementById('cam-loading').style.display = 'none';
+    document.getElementById('cam-offline').style.display = 'flex';
+    document.getElementById('btn-start').disabled = false;
+    setStatus('ERROR');
+    return;
+  }
+
+  document.getElementById('cam-loading').style.display = 'none';
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display  = 'flex';
+  setStatus('ACTIVE');
+  detecting = true;
+  detectLoop();
+}
+
+// ── Stop camera ───────────────────────────────────────
+function stopCam(){
+  detecting = false;
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('cam-offline').style.display = 'flex';
+  document.getElementById('btn-stop').style.display  = 'none';
+  document.getElementById('btn-start').style.display = 'flex';
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('m-face').textContent  = 'NONE';
+  document.getElementById('m-face').className   = 'mv mv-g';
+  setStatus('STANDBY');
+  log('Camera stopped','amber');
+}
+
+// ── Main detection loop ───────────────────────────────
+async function detectLoop(){
+  if(!detecting) return;
+
+  // Resize canvas to video
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+
+  // FPS
+  frameNum++;
+  const now = performance.now();
+  if(now - lastTime >= 1000){
+    fps = frameNum;
+    frameNum = 0;
+    lastTime = now;
+    document.getElementById('m-fps').textContent = fps;
+  }
+
+  try{
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({scoreThreshold:0.4}))
+      .withAgeAndGender()
+      .withFaceExpressions();
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    if(detections.length > 0){
+      const det = detections[0];
+      scanCount++;
+      document.getElementById('m-scans').textContent = scanCount;
+
+      const {age, gender, genderProbability, expressions} = det;
+      const rawAge = Math.round(age);
+      const conf   = Math.round(genderProbability * 100);
+
+      // ── If new face is very different from locked, reset ──
+      // This handles switching between people without leaving frame
+      if(lockedAge !== null && Math.abs(rawAge - lockedAge) > 8){
+        // Count how many recent readings are far from lock
+        const farCount = ageBuffer.filter(a => Math.abs(a - lockedAge) > 8).length;
+        if(farCount >= 5){
+          log(`Person changed: ${lockedAge}→${rawAge}yrs, resetting lock`, 'amber');
+          ageBuffer    = [];
+          genderBuffer = [];
+          exprBuffer   = [];
+          stableCount  = 0;
+          lockedAge    = null;
+        }
+      }
+
+      // ── Push into buffers ──────────────────────────
+      bufferPush(ageBuffer,    rawAge,              BUFFER_SIZE);
+      bufferPush(genderBuffer, gender.toUpperCase(), BUFFER_SIZE);
+      bufferPush(exprBuffer,
+        Object.entries(expressions).sort((a,b)=>b[1]-a[1])[0][0].toUpperCase(),
+        BUFFER_SIZE);
+
+      // ── Compute smoothed values ────────────────────
+      const smoothAge  = Math.round(bufferMean(ageBuffer));
+      const stdDev     = bufferStdDev(ageBuffer);
+      const stableGender = bufferMode(genderBuffer);
+      const stableExpr   = bufferMode(exprBuffer);
+
+      // ── Lock display when readings are stable ──────
+      // Only update the displayed age when std dev is low
+      // This prevents the number jumping around every frame
+      let displayAge;
+      if(ageBuffer.length >= BUFFER_SIZE){
+        if(stdDev < LOCK_THRESH){
+          stableCount++;
+          if(stableCount >= 5 || lockedAge === null){
+            // Commit new stable age
+            if(lockedAge !== smoothAge){
+              lockedAge = smoothAge;
+              log(`Age locked: ${lockedAge}yrs (σ=${stdDev.toFixed(1)}, ${stableGender})`, 'cyan');
+            }
+          }
+        } else {
+          // Readings unstable — reset stable count but keep last lock
+          stableCount = 0;
+        }
+        displayAge = lockedAge !== null ? lockedAge : smoothAge;
+      } else {
+        // Still filling buffer — show "calibrating"
+        displayAge = null;
+      }
+
+      // ── Update UI ─────────────────────────────────
+      const ageEl = document.getElementById('age-num');
+      if(displayAge !== null){
+        ageEl.textContent = displayAge;
+        document.getElementById('age-range').textContent =
+          `RANGE: ${Math.max(1,displayAge-4)}–${displayAge+4}`;
+        updateClassBars(displayAge);
+      } else {
+        ageEl.textContent = '~~';
+        document.getElementById('age-range').textContent = 'CALIBRATING...';
+      }
+
+      document.getElementById('conf-pct').textContent  = conf+'%';
+      document.getElementById('conf-fill').style.width = conf+'%';
+      document.getElementById('m-face').textContent    = stdDev < LOCK_THRESH ? 'LOCKED ✓' : 'CALIBRATING';
+      document.getElementById('m-face').style.color    = stdDev < LOCK_THRESH ? 'var(--green)' : 'var(--amber)';
+      document.getElementById('m-gender').textContent  = stableGender;
+      document.getElementById('m-expr').textContent    = stableExpr;
+
+      // ── Draw face box ──────────────────────────────
+      const box    = det.detection.box;
+      const scaleX = canvas.width  / (video.videoWidth  || 640);
+      const scaleY = canvas.height / (video.videoHeight || 480);
+      const mirX   = canvas.width - (box.x + box.width) * scaleX;
+      const bw     = box.width  * scaleX;
+      const bh     = box.height * scaleY;
+      const by     = box.y * scaleY;
+
+      // Box color: cyan when locked, amber when calibrating
+      const boxColor = stdDev < LOCK_THRESH ? '#00FFFF' : '#FFBF00';
+
+      ctx.save();
+      ctx.shadowColor = boxColor;
+      ctx.shadowBlur  = 18;
+      ctx.strokeStyle = boxColor;
+      ctx.lineWidth   = 2;
+      ctx.strokeRect(mirX, by, bw, bh);
+
+      // Corner marks
+      const cl = 16;
+      ctx.lineWidth = 3;
+      [[mirX,by],[mirX+bw-cl,by],[mirX,by+bh-cl],[mirX+bw-cl,by+bh-cl]].forEach(([x,y],i)=>{
+        ctx.beginPath();
+        if(i===0){ctx.moveTo(x+cl,y);ctx.lineTo(x,y);ctx.lineTo(x,y+cl)}
+        if(i===1){ctx.moveTo(x,y);ctx.lineTo(x+cl,y);ctx.lineTo(x+cl,y+cl)}
+        if(i===2){ctx.moveTo(x,y);ctx.lineTo(x,y+cl);ctx.lineTo(x+cl,y+cl)}
+        if(i===3){ctx.moveTo(x+cl,y);ctx.lineTo(x+cl,y);ctx.lineTo(x+cl,y+cl)}
+        ctx.stroke();
+      });
+
+      // Label
+      const labelAge = displayAge !== null ? displayAge : '??';
+      const labelStab = stdDev < LOCK_THRESH ? '● LOCKED' : '◌ CALIBRATING';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle  = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(mirX, by - 24, bw, 24);
+      ctx.fillStyle  = boxColor;
+      ctx.font       = '11px "Share Tech Mono"';
+      ctx.shadowColor= boxColor;
+      ctx.fillText(`AGE: ${labelAge}  ${stableGender}  ${labelStab}`, mirX+6, by-8);
+      ctx.restore();
+
+    } else {
+      // No face — fully reset everything so next person starts fresh
+      ageBuffer    = [];
+      genderBuffer = [];
+      exprBuffer   = [];
+      stableCount  = 0;
+      lockedAge    = null;
+      document.getElementById('age-num').textContent    = '--';
+      document.getElementById('age-range').textContent  = 'RANGE: ??–??';
+      document.getElementById('conf-pct').textContent   = '0%';
+      document.getElementById('conf-fill').style.width  = '0%';
+      document.getElementById('m-face').textContent     = 'SCANNING...';
+      document.getElementById('m-face').style.color     = 'var(--green-dim)';
+      document.getElementById('m-gender').textContent   = '--';
+      document.getElementById('m-expr').textContent     = '--';
+    }
+
+  } catch(e){
+    // silent — keep looping
+  }
+
+  // ~15fps for performance
+  setTimeout(()=>requestAnimationFrame(detectLoop), 66);
+}
+
+// ── Init ──────────────────────────────────────────────
+initClassBars();
+log('System ready. Click ACTIVATE to begin.','cyan');
+</script>
+</body>
+</html>
